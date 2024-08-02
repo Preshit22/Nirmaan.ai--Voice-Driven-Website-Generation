@@ -1,0 +1,484 @@
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WebSmith (beta.V.2.2)</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.25.0/themes/prism-okaidia.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+      rel="stylesheet"
+    />
+    Font Awesome for icons 
+
+    <style>
+      body {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        background-color: #212121;
+        color: white;
+        margin: 0;
+      }
+      .main-content {
+        flex-grow: 1;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        overflow: auto;
+      }
+      .output-container,
+      .display-container {
+        position: relative;
+        background-color: #4e4e4e;
+        padding: 20px;
+        border-radius: 8px;
+        white-space: pre-wrap;
+        overflow-x: auto;
+        flex-grow: 1;
+        display: none;
+        height: 500px;
+      }
+      .output-container.active,
+      .display-container.active {
+        display: block;
+      }
+      #copyButton {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background-color: #333;
+        font-size: 0.875rem;
+        margin: 0;
+        z-index: 10;
+        padding: 15px;
+        border-radius: 45px;
+      }
+      pre {
+        margin: 0;
+        word-break: break-all;
+      }
+      button.loading {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      .loading-dots {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 40px;
+        height: 13px;
+      }
+      .loading-dots div {
+        width: 8px;
+        height: 8px;
+        margin: 0 2px;
+        border-radius: 50%;
+        background: white;
+        animation-timing-function: cubic-bezier(0, 1, 1, 0);
+      }
+      .loading-dots div:nth-child(1) {
+        animation: loading-dots1 0.6s infinite;
+      }
+      .loading-dots div:nth-child(2) {
+        animation: loading-dots2 0.6s infinite;
+      }
+      .loading-dots div:nth-child(3) {
+        animation: loading-dots2 0.6s infinite;
+      }
+      .loading-dots div:nth-child(4) {
+        animation: loading-dots3 0.6s infinite;
+      }
+      @keyframes loading-dots1 {
+        0% {
+          transform: scale(0);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+      @keyframes loading-dots2 {
+        0% {
+          transform: translate(0, 0);
+        }
+        100% {
+          transform: translate(24px, 0);
+        }
+      }
+      @keyframes loading-dots3 {
+        0% {
+          transform: scale(1);
+        }
+        100% {
+          transform: scale(0);
+        }
+      }
+      /* #inputPrompt {
+        display: none;
+      } */
+      .scanner-container {
+        position: relative;
+        width: 100%;
+        overflow: hidden;
+      }
+      .scanner {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+          to bottom,
+          transparent,
+          rgba(255, 0, 0, 0.5),
+          transparent
+        );
+        animation: scan 3s infinite;
+        pointer-events: none;
+      }
+      @keyframes scan {
+        0% {
+          top: -100%;
+        }
+        100% {
+          top: 100%;
+        }
+      }
+      .uploaded-image {
+        max-width: 100%;
+        display: block;
+      }
+      .fixed-bar {
+        position: fixed;
+        bottom: 20px; /* Adjusted for a little margin from the bottom */
+        left: 50%;
+        transform: translateX(-50%);
+        width: 80%;
+        background-color: #333;
+        padding: 10px;
+        display: flex;
+        align-items: center;
+        border-radius: 40px; /* Rounded border */
+      }
+      .fixed-bar input {
+        flex-grow: 1;
+        margin-right: 10px;
+        padding: 10px;
+        background-color: transparent;
+        border: none; /* Remove border */
+        color: white; /* Text color */
+        outline: none; /* Remove outline on focus */
+      }
+      .fixed-bar button {
+        margin-left: 5px;
+        padding: 13px;
+        border: none;
+        border-radius: 100px;
+        width: 50px;
+        background-color: #505050;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .fixed-bar button i {
+        font-size: 1.25rem; /* Icon size */
+      }
+
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 50;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0, 0, 0, 0.5);
+        padding-top: 60px;
+      }
+      .modal-content {
+        background-color: #fefefe;
+        margin: 5% auto;
+        padding: 20px;
+        border: 1px solid #888;
+        width: 80%;
+        max-width: 600px;
+        border-radius: 10px;
+      }
+      .close {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+      }
+      .close:hover,
+      .close:focus {
+        color: black;
+        text-decoration: none;
+        cursor: pointer;
+      }
+
+      .loading-overlay {
+        position: fixed;
+        bottom: 300px;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999; /* Ensure the overlay appears above other content */
+      }
+
+      .loading-spinner {
+        border: 5px solid #f3f3f3; /* Light grey */
+        border-top: 5px solid #3498db; /* Blue */
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        animation: spin 2s linear infinite;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+      #toggleButton {
+        position: fixed;
+        top: 25px;
+        left: 25px;
+        background-color: white;
+        color: black;
+        border: none;
+        border-radius: 10px;
+        padding: 10px;
+        cursor: pointer;
+        z-index: 999; /* Ensure the buttons appear above other content */
+      }
+    </style>
+  </head>
+  <body>
+    <div class="main-content">
+      <button id="toggleButton" class="">Show Display</button>
+      <div id="displayContainer" class="display-container">
+        <iframe id="displayFrame" class="w-full h-full border-0"></iframe>
+      </div>
+      <div id="outputContainer" class="output-container">
+        <button id="copyButton" class="">Copy Code</button>
+        <pre><code id="codeOutput" class="language-html"></code></pre>
+      </div>
+    </div>
+    <div class="fixed-bar">
+      <input
+        type="text"
+        id="inputPrompt"
+        placeholder="Type your prompt here..."
+      />
+      <button
+        id="toggleRecordingButton"
+        title="Start Recording"
+        class="text-white font-bold py-2 px-4 rounded"
+      >
+        <i class="fas fa-microphone"></i>
+        <!-- Recording icon -->
+      </button>
+      <button
+        id="applyChangesButton"
+        title="Apply Changes"
+        class="text-white font-bold py-2 px-4 rounded"
+      >
+        <i class="fas fa-check"></i>
+
+        <!-- Apply changes icon -->
+      </button>
+      <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+      </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.25.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.25.0/components/prism-html.min.js"></script>
+    <script>
+      const toggleRecordingButton = document.getElementById(
+        "toggleRecordingButton"
+      );
+      const codeOutput = document.getElementById("codeOutput");
+      const copyButton = document.getElementById("copyButton");
+      const inputPrompt = document.getElementById("inputPrompt");
+      const applyChangesButton = document.getElementById("applyChangesButton");
+      const toggleButton = document.getElementById("toggleButton");
+      const displayContainer = document.getElementById("displayContainer");
+      const outputContainer = document.getElementById("outputContainer");
+      const displayFrame = document.getElementById("displayFrame");
+
+      let isRecording = false;
+      let generatedCode = "";
+
+      toggleRecordingButton.addEventListener("click", () => {
+        if (!isRecording) {
+          startRecording();
+        } else {
+          stopRecording();
+        }
+      });
+
+      
+
+      function startRecording() {
+        // Show loading overlay
+        document.getElementById("loadingOverlay").style.display = "flex";
+
+        fetch("/record", { method: "POST" })
+          .then((response) => response.json())
+          .then((data) => {
+            console.log(data);
+            toggleRecordingButton.innerHTML =
+              '<i id="recordIcon" class="fas fa-stop" title="Stop Recording"></i>'; // Change to stop icon with title
+            isRecording = true;
+
+            // Hide loading overlay when recording starts
+            document.getElementById("loadingOverlay").style.display = "none";
+          });
+      }
+
+      function stopRecording() {
+        // Show loading overlay
+        document.getElementById("loadingOverlay").style.display = "flex";
+
+        fetch("/stop_record", { method: "POST" })
+          .then((response) => response.json())
+          .then((data) => {
+            console.log(data);
+            toggleRecordingButton.innerHTML =
+              '<i id="recordIcon" class="fas fa-microphone" title="Start Recording"></i>'; // Change to microphone icon with title
+            isRecording = false;
+            transcribeAudio();
+
+            
+          });
+      }
+
+      function transcribeAudio() {
+        fetch("/transcribe", { method: "POST" })
+          .then((response) => response.json())
+          .then((data) => {
+            console.log(data);
+            const transcription = data.transcription;
+            generateCode(transcription);
+            
+          });
+      }
+      function generateCode(transcription) {
+        fetch("/generate-code", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            transcription: transcription,
+          }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.error) {
+              codeOutput.innerText = data.error;
+            } else {
+              generatedCode = data.code;
+               // Hide loading overlay when recording stops
+              document.getElementById("loadingOverlay").style.display = "none";
+              codeOutput.innerText = generatedCode;
+              codeOutput.innerHTML = generatedCode
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;");
+              Prism.highlightElement(codeOutput);
+              inputPrompt.style.display = "block"; // Show input prompt when code is displayed
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+            codeOutput.innerText = "An error occurred";
+          });
+      }
+
+      copyButton.addEventListener("click", () => {
+        const codeText = codeOutput.innerText;
+        navigator.clipboard
+          .writeText(codeText)
+          .then(() => {
+            copyButton.innerText = "Copied ✔";
+            setTimeout(() => {
+              copyButton.innerText = "Copy Code";
+            }, 5000);
+          })
+          .catch((err) => {
+            console.error("Error copying text: ", err);
+          });
+      });
+
+      applyChangesButton.addEventListener("click", () => {
+        const userPrompt = inputPrompt.value.trim();
+        if (!userPrompt) {
+          alert("Please enter a prompt");
+          return;
+        }
+
+        fetch("/update-code", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            current_code: generatedCode,
+            user_prompt: userPrompt,
+          }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.error) {
+              codeOutput.innerText = data.error;
+            } else {
+              generatedCode = data.code;
+              codeOutput.innerText = generatedCode;
+              codeOutput.innerHTML = generatedCode
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;");
+              Prism.highlightElement(codeOutput);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+            codeOutput.innerText = "An error occurred";
+          });
+      });
+
+      toggleButton.addEventListener("click", () => {
+        if (outputContainer.classList.contains("active")) {
+          outputContainer.classList.remove("active");
+          displayContainer.classList.add("active");
+          toggleButton.innerText = "Show Code";
+          displayFrame.srcdoc = generatedCode;
+        } else {
+          displayContainer.classList.remove("active");
+          outputContainer.classList.add("active");
+          toggleButton.innerText = "Show Display";
+        }
+      });
+    </script>
+  </body>
+</html> 
